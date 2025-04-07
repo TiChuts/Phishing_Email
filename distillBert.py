@@ -15,7 +15,7 @@ train_texts, test_texts, train_labels, test_labels = train_test_split(
 )
 tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
 def tokenize_function(texts):
-    return tokenizer(texts, padding="max_length", truncation=True, max_length=512)
+    return tokenizer(texts, padding="max_length", truncation=True, max_length=64)
 train_encodings = tokenize_function(train_texts)
 test_encodings = tokenize_function(test_texts)
 train_dataset = Dataset.from_dict({
@@ -36,7 +36,7 @@ training_args = TrainingArguments(
     save_strategy="epoch",
     per_device_train_batch_size=8,
     per_device_eval_batch_size=8,
-    num_train_epochs=3,
+    num_train_epochs=5,
     logging_dir="./logs",
     logging_steps=500,
     save_total_limit=2,

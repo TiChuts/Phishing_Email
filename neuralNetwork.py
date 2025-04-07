@@ -53,7 +53,7 @@ model_smp .add(Dense(1, activation='sigmoid'))
 model_smp.compile(loss='binary_crossentropy' , optimizer='adam', metrics=['accuracy'])
 model_smp.summary()
 
-historical_smp  = model_smp.fit(x_train,y_train, epochs=7, batch_size=16, validation_data=(x_test,y_test))
+historical_smp  = model_smp.fit(x_train,y_train, epochs=5, batch_size=16, validation_data=(x_test,y_test))
 pd.DataFrame(historical_smp.history)
 pd.DataFrame(historical_smp.history)[['accuracy', 'val_accuracy']].plot()
 plt.title('Training Accuracy')

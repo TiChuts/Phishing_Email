@@ -20,8 +20,8 @@ tokenizer = AlbertTokenizer.from_pretrained(model_name)
 train_texts = df["Email Text"].iloc[list(range(len(x_train)))].tolist()
 test_texts = df["Email Text"].iloc[list(range(len(x_test)))].tolist()
 
-train_encodings = tokenizer(train_texts, padding="max_length", truncation=True, max_length=48, return_tensors="tf")
-test_encodings = tokenizer(test_texts, padding="max_length", truncation=True, max_length=48, return_tensors="tf")
+train_encodings = tokenizer(train_texts, padding="max_length", truncation=True, max_length=64, return_tensors="tf")
+test_encodings = tokenizer(test_texts, padding="max_length", truncation=True, max_length=64, return_tensors="tf")
 
 # Extract input tensors
 train_inputs = train_encodings["input_ids"]
@@ -53,5 +53,5 @@ model.compile(loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=Tru
 history = model.fit(
     train_dataset,
     validation_data=test_dataset,
-    epochs=3, 
+    epochs=5, 
 )

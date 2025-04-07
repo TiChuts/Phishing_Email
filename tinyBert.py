@@ -23,8 +23,8 @@ model = AutoModelForSequenceClassification.from_pretrained(model_name, num_label
 train_texts = df["Email Text"].iloc[list(range(len(x_train)))].tolist()
 test_texts = df["Email Text"].iloc[list(range(len(x_test)))].tolist()
 
-train_encodings = tokenizer(train_texts, padding=True, truncation=True, max_length=512, return_tensors="pt")
-test_encodings = tokenizer(test_texts, padding=True, truncation=True, max_length=512, return_tensors="pt")
+train_encodings = tokenizer(train_texts, padding=True, truncation=True, max_length=64, return_tensors="pt")
+test_encodings = tokenizer(test_texts, padding=True, truncation=True, max_length=64, return_tensors="pt")
 
 train_labels = torch.tensor(y_train)
 test_labels = torch.tensor(y_test)
@@ -40,7 +40,7 @@ model.to(device)
 optimizer = optim.AdamW(model.parameters(), lr=5e-5)
 criterion = nn.CrossEntropyLoss()
 
-epochs = 3  
+epochs = 5
 for epoch in range(epochs):
     model.train()
     total_loss = 0
@@ -74,7 +74,7 @@ print(f"Test Accuracy: {accuracy * 100:.2f}%")
 
 def predict_email(email_text):
     model.eval()
-    inputs = tokenizer(email_text, padding=True, truncation=True, max_length=512, return_tensors="pt").to(device)
+    inputs = tokenizer(email_text, padding=True, truncation=True, max_length=64, return_tensors="pt").to(device)
     with torch.no_grad():
         outputs = model(**inputs)
         prediction = torch.argmax(outputs.logits, dim=1).item()

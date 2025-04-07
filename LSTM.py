@@ -46,22 +46,3 @@ model.add(Dense(1, activation='sigmoid'))
 model.compile(loss='binary_crossentropy' , optimizer='adam', metrics=['accuracy'])
 model.summary()
 historical  = model.fit(x_train,y_train, epochs=5, batch_size=16, validation_data=(x_test,y_test))
-
-# CNN
-print("CNN is processing...") 
-model = Sequential([
-    Embedding(input_dim=len(tk.word_index)+1, output_dim=50, input_length=max_len),
-    Conv1D(filters=128, kernel_size=5, activation='relu'),
-    GlobalMaxPooling1D(),
-    Dense(64, activation='relu'),
-    Dropout(0.5),
-    Dense(1, activation='sigmoid')  
-])
-
-model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
-
-epochs = 5
-batch_size = 16
-model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=epochs, batch_size=batch_size)
-
-loss, accuracy = model.evaluate(x_test, y_test)
