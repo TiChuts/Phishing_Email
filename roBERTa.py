@@ -1,6 +1,3 @@
-debug = False
-debug2 = False
-
 import numpy as np 
 import pandas as pd 
 import os
@@ -14,18 +11,15 @@ import matplotlib.pyplot as plt
 import transformers
 import random
 import chardet
-import warnings
 from sklearn.model_selection import train_test_split
 from transformers import AdamW
 from transformers import get_linear_schedule_with_warmup
 from sklearn.metrics import classification_report
-warnings.simplefilter('ignore')
 
 scaler = torch.amp.GradScaler() 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 device
 
-# Very slow 
 def random_seed(SEED):
     
     random.seed(SEED)
@@ -38,8 +32,6 @@ def random_seed(SEED):
     
 SEED = 508
 random_seed(SEED)
-
-
 
 data = pd.read_csv("Dataset/phishingEmail.csv")
 data=data[['Email Text','Email Type']]
@@ -133,7 +125,7 @@ output = output["logits"].squeeze(-1).shape
 
 LR=2e-5
 optimizer = AdamW(model.parameters(), LR,betas=(0.9, 0.999), weight_decay=1e-2) 
-epochs = 10
+epochs = 5
 if debug:
     epochs = 1
 train_steps = int(len(p_train)/train_batch*epochs)
@@ -444,15 +436,4 @@ tpreds = predicting2(test_dataloader,model,pthes)
 test_true = p_test['label']
 test_pred = []
 for p in tpreds[0]:
-    test_pred+=[round(p,0)]
-
-from sklearn.metrics import classification_report
-print(classification_report(test_true,test_pred,target_names=class_names,digits=4))
-
-test_true = p_test['label']
-test_pred = []
-for p in tpreds[0]:
-    test_pred+=[round(p,0)]
-
-from sklearn.metrics import classification_report
-print(classification_report(test_true,test_pred,target_names=class_names,digits=4))
+    test_pred+=[round(p,0)] 

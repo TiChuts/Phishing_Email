@@ -16,6 +16,7 @@ if __name__ == "__main__":
 
 df, x_train, x_test, y_train, y_test = load_and_preprocess()
 
+#Tiny Bert
 model_name = "huawei-noah/TinyBERT_General_4L_312D"
 tokenizer = AutoTokenizer.from_pretrained(model_name)
 model = AutoModelForSequenceClassification.from_pretrained(model_name, num_labels=2) 

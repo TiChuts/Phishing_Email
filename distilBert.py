@@ -3,10 +3,12 @@ import pandas as pd
 import torch
 from transformers import DistilBertTokenizer, DistilBertForSequenceClassification, Trainer, TrainingArguments
 from datasets import Dataset
+from sklearn.metrics import accuracy_score
 from sklearn.model_selection import train_test_split
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print("Using device: ", device)
+
 df = pd.read_csv("Dataset/phishingEmail.csv")
 df.dropna(inplace=True)
 df["label"] = df["Email Type"].apply(lambda x: 1 if x == "Phishing Email" else 0)
@@ -50,5 +52,12 @@ trainer = Trainer(
 )
 trainer.train()
 trainer.evaluate()
-model.save_pretrained("./phishing_model")
-tokenizer.save_pretrained("./phishing_model")
+
+predictions = trainer.predict(test_dataset)
+
+preds = torch.argmax(torch.tensor(predictions.predictions), axis=1).numpy()
+
+true_labels = test_labels.numpy()  
+
+acc = accuracy_score(true_labels, preds)
+print(f"Test Accuracy: {acc:.4f}")
