@@ -63,4 +63,28 @@ def load_and_preprocess():
     # plt.axis("off")
     # plt.title("Word Cloud of Unique Words")
 
-    
+def load_and_preprocess_kfold():
+    df = pd.read_csv("Dataset/phishingEmail.csv")
+    df.drop(["Unnamed: 0"], axis=1, inplace=True, errors="ignore")
+    df.dropna(inplace=True)
+    df.drop_duplicates(inplace=True)
+
+    le = LabelEncoder()
+    df["Email Type"] = le.fit_transform(df["Email Type"])
+
+    def preprocess_text(text):
+        text = re.sub(r'http\S+', '', text)
+        text = re.sub(r'[^\w\s]', '', text)
+        text = text.lower()
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
+
+    # Make sure to create 'processed_text' column
+    df["processed_text"] = df["Email Text"].apply(preprocess_text)
+
+    tf = TfidfVectorizer(stop_words="english", max_features=10000)
+    X = tf.fit_transform(df["processed_text"])  # Use processed_text now
+    y = np.array(df['Email Type'])
+
+    return df, X, y
+

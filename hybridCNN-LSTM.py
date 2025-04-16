@@ -38,7 +38,7 @@ model.summary()
 
 model.fit(
     x_train, y_train,
-    epochs=5,
+    epochs=10,
     batch_size=16,
     validation_data=(x_test, y_test)
 )

@@ -73,12 +73,3 @@ with torch.no_grad():
 accuracy = accuracy_score(true_labels, predictions)
 print(f"Test Accuracy: {accuracy * 100:.2f}%")
 
-def predict_email(email_text):
-    model.eval()
-    inputs = tokenizer(email_text, padding=True, truncation=True, max_length=64, return_tensors="pt").to(device)
-    with torch.no_grad():
-        outputs = model(**inputs)
-        prediction = torch.argmax(outputs.logits, dim=1).item()
-    
-    return "Phishing" if prediction == 1 else "Legitimate"
-
