@@ -14,10 +14,10 @@ from Dataset.algorithms import load_and_preprocess_kfold
 
 df, X, y = load_and_preprocess_kfold()
 
-kf = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+kf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 accs, f1s, losses, rmses = [], [], [], []
 
-print("Starting 10-Fold Cross Validation...\n")
+print("Starting K-Fold Cross Validation...\n")
 
 for fold, (train_idx, val_idx) in enumerate(kf.split(X, y), 1):
     X_train, X_val = X[train_idx], X[val_idx]
@@ -57,7 +57,5 @@ for fold, (train_idx, val_idx) in enumerate(kf.split(X, y), 1):
 
 print("\nCross-Validation Summary:")
 print(f"Average Accuracy : {np.mean(accs)*100:.2f}%")
-print(f"Average F1 Score : {np.mean(f1s)*100:.2f}%")
-print(f"Average Log Loss : {np.mean(losses):.4f}")
 print(f"Average RMSE     : {np.mean(rmses):.4f}")
 print(f"Average Loss Rate: {(1 - np.mean(accs))*100:.2f}%")
