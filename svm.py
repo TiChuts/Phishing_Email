@@ -1,55 +1,63 @@
+import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.svm import SVC
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import (
+    accuracy_score, confusion_matrix, 
+    ConfusionMatrixDisplay, precision_score, recall_score, f1_score,
+    log_loss, mean_squared_error
+)
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import LabelEncoder
 
-# Load and clean data
 df = pd.read_csv("Dataset/phishingEmail.csv")
-df = df.dropna()  # Drop missing values
+df = df.dropna()
 
 print("Dimension of the raw data:", df.shape)
-email_type_counts = df['Email Type'].value_counts()
 
-# Create the bar chart with custom colors
-unique_email_types = email_type_counts.index.tolist()
-color_map = {'Phishing Email': 'red', 'Safe Email': 'green'}
-colors = [color_map.get(email_type, 'gray') for email_type in unique_email_types]
-
-plt.figure(figsize=(8, 6))
-plt.bar(unique_email_types, email_type_counts, color=colors)
-plt.xlabel('Email Type')
-plt.ylabel('Count')
-plt.title('Distribution of Email Types with Custom Colors')
-plt.xticks(rotation=45)
-plt.tight_layout()
-
-# Balance the dataset
-Safe_Email = df[df["Email Type"] == "Safe Email"]
+Safe_Email = df[df["Email Type"] == "Safe Email"].sample(df[df["Email Type"] == "Phishing Email"].shape[0], random_state=0)
 Phishing_Email = df[df["Email Type"] == "Phishing Email"]
-Safe_Email = Safe_Email.sample(Phishing_Email.shape[0])  # Balance dataset
 Data = pd.concat([Safe_Email, Phishing_Email], ignore_index=True)
 
-# Prepare features and labels
-X = Data["Email Text"].values
+X = Data["Email Text"].astype(str).values
 y = Data["Email Type"].values
 
-# Ensure X is fully flattened and string-converted
-X = [str(x) for x in X]  # Convert all entries to string explicitly
+le = LabelEncoder()
+y_encoded = le.fit_transform(y)
 
-# Split data into training and testing sets
-X_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0)
+X_train, X_test, y_train_enc, y_test_enc = train_test_split(X, y_encoded, test_size=0.3, random_state=0, stratify=y_encoded)
 
-# SVM with TfidfVectorizer
-SVM = Pipeline([("tfidf", TfidfVectorizer()), ("SVM", SVC(C=100, gamma="auto"))])
-SVM.fit(X_train, y_train)
+svm_pipeline = Pipeline([
+    ("tfidf", TfidfVectorizer()),
+    ("svm", SVC(C=100, gamma="auto", probability=True))
+])
 
-# Make predictions
-s_ypred = SVM.predict(x_test)
+svm_pipeline.fit(X_train, y_train_enc)
 
-# Evaluate performance
-print("Accuracy Score Report: \n", accuracy_score(y_test, s_ypred))
-print("Classification Report:\n", classification_report(y_test, s_ypred))
-print("Confusion Matrix:\n", confusion_matrix(y_test, s_ypred))
+y_pred_enc = svm_pipeline.predict(X_test)
+
+y_proba = svm_pipeline.predict_proba(X_test)
+
+accuracy = accuracy_score(y_test_enc, y_pred_enc)
+precision = precision_score(y_test_enc, y_pred_enc)
+recall = recall_score(y_test_enc, y_pred_enc)
+f1 = f1_score(y_test_enc, y_pred_enc)
+logloss = log_loss(y_test_enc, y_proba)
+error_rate = 1 - accuracy
+rmse = np.sqrt(mean_squared_error(y_test_enc, y_pred_enc))
+
+print(f"Accuracy: {accuracy:.4f}")
+print(f"Precision: {precision:.4f}")
+print(f"Recall: {recall:.4f}")
+print(f"F1-score: {f1:.4f}")
+print(f"Log Loss: {logloss:.4f}")
+print(f"Error Rate: {error_rate:.4f}")
+print(f"RMSE: {rmse:.4f}")
+
+cm = confusion_matrix(y_test_enc, y_pred_enc)
+disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=le.classes_)
+disp.plot(cmap=plt.cm.Blues)
+plt.title("Confusion Matrix - SVM with TF-IDF")
+plt.show()
