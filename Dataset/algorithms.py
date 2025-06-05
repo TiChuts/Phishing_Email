@@ -9,27 +9,11 @@ from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 
 def load_and_preprocess():
-    # Load dataset
     df = pd.read_csv("Dataset/phishingEmail.csv")
     df.isnull().sum()
     df.drop(["Unnamed: 0"], axis=1, inplace=True, errors="ignore")
     df.dropna(inplace=True)
     df.drop_duplicates(inplace=True)
-
-    print("Dimension of the row data:",df.shape)   
-    # Create the bar chart
-    fig = px.bar(df['Email Type'].value_counts(), x=df['Email Type'].value_counts().index, y=df['Email Type'].value_counts().values,
-             color=['blue', 'red'], labels={'x': 'Category', 'y': 'Count'},
-             title="Categorical Distribution")
-    fig.show()
- 
-    # Create the pie chart
-    fig_pie = px.pie(df['Email Type'].value_counts(), names=df['Email Type'].value_counts().index,
-                 values=df['Email Type'].value_counts().values, title="Categorical Distribution")
-    fig_pie.show()
-
-    le = LabelEncoder()
-    df["Email Type"] = le.fit_transform(df["Email Type"])
 
     def preprocess_text(text):
         text = re.sub(r'http\S+', '', text)  # Remove hyperlinks
@@ -40,12 +24,11 @@ def load_and_preprocess():
 
     df["Email Text"] = df["Email Text"].apply(preprocess_text)
 
-    # TF-IDF Feature Extraction
     tf = TfidfVectorizer(stop_words="english", max_features=10000)
     feature_x = tf.fit_transform(df["Email Text"]).toarray()
-    y_tf = np.array(df['Email Type'])  # Convert labels to numpy array
+    y_tf = np.array(df['Email Type'])  
 
-    # Train-Test Split
+
     x_train, x_test, y_train, y_test = train_test_split(feature_x, y_tf, train_size=0.8, random_state=0)
     return df, x_train, x_test, y_train, y_test
 

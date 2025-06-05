@@ -1,15 +1,9 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import numpy as np
-import matplotlib.pyplot as plt
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from torch.utils.data import DataLoader, TensorDataset
-from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score,
-    f1_score, log_loss, root_mean_squared_error,
-    confusion_matrix, ConfusionMatrixDisplay
-)
+from sklearn.metrics import accuracy_score
 from Dataset.algorithms import load_and_preprocess 
 
 df, x_train, x_test, y_train, y_test = load_and_preprocess()
@@ -30,8 +24,8 @@ test_texts = df["Email Text"].iloc[list(range(len(x_test)))].tolist()
 train_encodings = tokenizer(train_texts, padding=True, truncation=True, max_length=64, return_tensors="pt")
 test_encodings = tokenizer(test_texts, padding=True, truncation=True, max_length=64, return_tensors="pt")
 
-train_labels = torch.tensor(y_train.values)
-test_labels = torch.tensor(y_test.values)
+train_labels = torch.tensor(y_train)
+test_labels = torch.tensor(y_test)
 
 train_dataset = TensorDataset(train_encodings["input_ids"], train_encodings["attention_mask"], train_labels)
 test_dataset = TensorDataset(test_encodings["input_ids"], test_encodings["attention_mask"], test_labels)
@@ -48,6 +42,9 @@ epochs = 5
 for epoch in range(epochs):
     model.train()
     total_loss = 0
+    correct = 0
+    total = 0
+
     for batch in train_loader:
         input_ids, attention_mask, labels = [b.to(device) for b in batch]
         optimizer.zero_grad()
@@ -55,38 +52,43 @@ for epoch in range(epochs):
         loss = criterion(outputs.logits, labels)
         loss.backward()
         optimizer.step()
+
         total_loss += loss.item()
-    print(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss:.4f}")
+        preds = torch.argmax(outputs.logits, dim=1)
+        correct += (preds == labels).sum().item()
+        total += labels.size(0)
+
+    train_accuracy = correct / total
+
+    model.eval()
+    val_loss = 0
+    val_correct = 0
+    val_total = 0
+
+    with torch.no_grad():
+        for batch in test_loader:
+            input_ids, attention_mask, labels = [b.to(device) for b in batch]
+            outputs = model(input_ids, attention_mask=attention_mask)
+            loss = criterion(outputs.logits, labels)
+            val_loss += loss.item()
+            preds = torch.argmax(outputs.logits, dim=1)
+            val_correct += (preds == labels).sum().item()
+            val_total += labels.size(0)
+
+    val_accuracy = val_correct / val_total
+    avg_train_loss = total_loss / total
+    avg_val_loss = val_loss / val_total
+    print(f"Epoch {epoch+1}/{epochs} | Train Loss: {avg_train_loss:.4f}, Train Acc: {train_accuracy:.4f} | Val Loss: {avg_val_loss:.4f}, Val Acc: {val_accuracy:.4f}")
 
 model.eval()
-predictions, true_labels, pred_probs = [], [], []
+predictions, true_labels = [], []
 with torch.no_grad():
     for batch in test_loader:
         input_ids, attention_mask, labels = [b.to(device) for b in batch]
         outputs = model(input_ids, attention_mask=attention_mask)
-        probs = torch.softmax(outputs.logits, dim=1)
-        preds = torch.argmax(probs, dim=1)
+        preds = torch.argmax(outputs.logits, dim=1)
         predictions.extend(preds.cpu().numpy())
-        pred_probs.extend(probs[:, 1].cpu().numpy())
         true_labels.extend(labels.cpu().numpy())
 
 accuracy = accuracy_score(true_labels, predictions)
-precision = precision_score(true_labels, predictions)
-recall = recall_score(true_labels, predictions)
-f1 = f1_score(true_labels, predictions)
-logloss = log_loss(true_labels, pred_probs)
-rmse = root_mean_squared_error(true_labels, predictions)
-error_rate = 1 - accuracy
-
-print(f"Accuracy     : {accuracy * 100:.2f} %")
-print(f"Precision    : {precision * 100:.2f} %")
-print(f"Recall       : {recall * 100:.2f} %")
-print(f"F1 Score     : {f1 * 100:.2f} %")
-print(f"Log Loss     : {logloss:.4f}")
-print(f"Error Rate   : {error_rate * 100:.2f} %")
-print(f"RMSE         : {rmse:.4f}")
-
-cm = confusion_matrix(true_labels, predictions)
-ConfusionMatrixDisplay(cm, display_labels=['Phishing Email', 'Safe Email']).plot(cmap='Blues')
-plt.title("Confusion Matrix")
-plt.show()
+print(f"Test Accuracy: {accuracy * 100:.2f}%")

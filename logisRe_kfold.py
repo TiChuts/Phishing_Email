@@ -59,11 +59,11 @@ for fold, (train_idx, val_idx) in enumerate(skf.split(X, y), 1):
     print(f"  Error Rate : {error_rate:.4f}")
     print(f"  RMSE       : {rmse:.4f}\n")
 
-    if fold == k:
-        cm = confusion_matrix(y_val, preds)
-        ConfusionMatrixDisplay(cm, display_labels=['Phishing Email', 'Safe Email']).plot()
-        plt.title(f"Confusion Matrix (Fold {fold})")
-        plt.show()
+    cm = confusion_matrix(y_val, preds)
+    ConfusionMatrixDisplay(cm, display_labels=["Phishing", "Safe"]).plot()
+    plt.title(f"Fold {fold} Confusion Matrix")
+    plt.show()
+    print("-" * 50)
 
 print("Cross-Validation Summary:")
 print(f"Average Accuracy   : {np.mean(accs):.4f}")

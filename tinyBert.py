@@ -3,15 +3,9 @@ import torch.nn as nn
 import torch.optim as optim
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from torch.utils.data import DataLoader, TensorDataset
-from sklearn.metrics import accuracy_score, precision_recall_fscore_support, log_loss, mean_squared_error
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
 from Dataset.algorithms import load_and_preprocess
-import numpy as np
-
-def main():
-    print("Main script running after preprocessing...")
-
-if __name__ == "__main__":
-    main()
 
 df, x_train, x_test, y_train, y_test = load_and_preprocess()
 
@@ -43,6 +37,9 @@ epochs = 5
 for epoch in range(epochs):
     model.train()
     total_loss = 0
+    correct = 0
+    total = 0
+
     for batch in train_loader:
         input_ids, attention_mask, labels = [b.to(device) for b in batch]
         optimizer.zero_grad()
@@ -51,38 +48,41 @@ for epoch in range(epochs):
         loss.backward()
         optimizer.step()
         total_loss += loss.item()
-    print(f"Epoch {epoch+1}/{epochs}, Loss: {total_loss:.4f}")
+        preds = torch.argmax(outputs.logits, dim=1)
+        correct += (preds == labels).sum().item()
+        total += labels.size(0)
+
+    train_accuracy = correct / total
+
+    model.eval()
+    val_loss = 0
+    val_correct = 0
+    val_total = 0
+
+    with torch.no_grad():
+        for batch in test_loader:
+            input_ids, attention_mask, labels = [b.to(device) for b in batch]
+            outputs = model(input_ids, attention_mask=attention_mask)
+            loss = criterion(outputs.logits, labels)
+            val_loss += loss.item()
+            preds = torch.argmax(outputs.logits, dim=1)
+            val_correct += (preds == labels).sum().item()
+            val_total += labels.size(0)
+
+    val_accuracy = val_correct / val_total
+    avg_train_loss = total_loss / total
+    avg_val_loss = val_loss / val_total
+    print(f"Epoch {epoch+1}/{epochs} | Train Loss: {avg_train_loss:.4f}, Train Acc: {train_accuracy:.4f} | Val Loss: {avg_val_loss:.4f}, Val Acc: {val_accuracy:.4f}")
 
 model.eval()
-all_preds = []
-all_probs = []
-all_labels = []
+predictions, true_labels = [], []
 with torch.no_grad():
     for batch in test_loader:
         input_ids, attention_mask, labels = [b.to(device) for b in batch]
         outputs = model(input_ids, attention_mask=attention_mask)
-        logits = outputs.logits
-        probs = torch.softmax(logits, dim=1)
-        preds = torch.argmax(probs, dim=1)
-        
-        all_preds.extend(preds.cpu().numpy())
-        all_probs.extend(probs.cpu().numpy())
-        all_labels.extend(labels.cpu().numpy())
+        preds = torch.argmax(outputs.logits, dim=1)
+        predictions.extend(preds.cpu().numpy())
+        true_labels.extend(labels.cpu().numpy())
 
-all_preds = np.array(all_preds)
-all_probs = np.array(all_probs)
-all_labels = np.array(all_labels)
-
-accuracy = accuracy_score(all_labels, all_preds)
-precision, recall, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average='weighted')
-logloss = log_loss(all_labels, all_probs)
-error_rate = 1 - accuracy
-rmse = np.sqrt(mean_squared_error(all_labels, all_preds))
-
+accuracy = accuracy_score(true_labels, predictions)
 print(f"Test Accuracy: {accuracy * 100:.2f}%")
-print(f"Precision: {precision:.4f}")
-print(f"Recall: {recall:.4f}")
-print(f"F1 Score: {f1:.4f}")
-print(f"Log Loss: {logloss:.4f}")
-print(f"Error Rate: {error_rate:.4f}")
-print(f"RMSE: {rmse:.4f}")

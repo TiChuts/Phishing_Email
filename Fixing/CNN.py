@@ -33,7 +33,6 @@ y = np.array(df['Email Type'])
 
 x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=0)
 
-print("CNN is processing...")
 model = Sequential([
     Embedding(input_dim=len(tk.word_index) + 1, output_dim=50, input_length=max_len),
     Conv1D(filters=128, kernel_size=5, activation='relu'),
